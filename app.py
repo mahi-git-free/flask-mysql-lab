@@ -1,6 +1,9 @@
 import os
+from dotenv import load_dotenv
 from flask import Flask, request, redirect
 import mysql.connector
+
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -13,6 +16,25 @@ def get_db_connection():
         password=os.environ.get("MYSQLPASSWORD"),
         database=os.environ.get("MYSQLDATABASE")
     )
+
+
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS phishing_urls (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            url VARCHAR(500),
+            domain_name VARCHAR(255),
+            ip_address VARCHAR(100),
+            verdict VARCHAR(100)
+        )
+    """)
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+init_db()
 
 
 @app.route("/", methods=["GET", "POST"])
