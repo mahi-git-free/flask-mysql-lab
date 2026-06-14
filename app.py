@@ -1,17 +1,40 @@
+import os
+from dotenv import load_dotenv
 from flask import Flask, request, redirect
 import mysql.connector
+
+load_dotenv()
 
 app = Flask(__name__)
 
 
 def get_db_connection():
     return mysql.connector.connect(
-        host="127.0.0.1",
-        port=3306,
-        user="root",
-        password="Root@123",
-        database="phishing_lab"
+        host=os.environ.get("MYSQLHOST"),
+        port=int(os.environ.get("MYSQLPORT", 3306)),
+        user=os.environ.get("MYSQLUSER"),
+        password=os.environ.get("MYSQLPASSWORD"),
+        database=os.environ.get("MYSQLDATABASE")
     )
+
+
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS phishing_urls (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            url VARCHAR(500),
+            domain_name VARCHAR(255),
+            ip_address VARCHAR(100),
+            verdict VARCHAR(100)
+        )
+    """)
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+init_db()
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -273,6 +296,16 @@ def home():
                 gap: 10px;
             }}
 
+            .clear-btn {{
+                text-decoration: none;
+                background: #e74c3c;
+                color: white;
+                padding: 8px 14px;
+                border-radius: 6px;
+                display: inline-block;
+                margin-bottom: 15px;
+            }}
+
         </style>
 
     </head>
@@ -350,6 +383,12 @@ def home():
                 <h2 id="stored-urls-section">
                     Stored Phishing URLs
                 </h2>
+
+                <a class="clear-btn"
+                   href="/clear-all"
+                   onclick="return confirm('Are you sure you want to clear all records? This will reset IDs too.')">
+                    Clear All
+                </a>
 
                 {table_html}
 
@@ -524,5 +563,22 @@ def delete_record(id):
     return redirect("/")
 
 
+@app.route("/clear-all")
+def clear_all():
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("TRUNCATE TABLE phishing_urls")
+
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return redirect("/")
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
