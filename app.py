@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, redirect
 import mysql.connector
 
@@ -6,11 +7,11 @@ app = Flask(__name__)
 
 def get_db_connection():
     return mysql.connector.connect(
-        host="127.0.0.1",
-        port=3306,
-        user="root",
-        password="Root@123",
-        database="phishing_lab"
+        host=os.environ.get("MYSQLHOST"),
+        port=int(os.environ.get("MYSQLPORT", 3306)),
+        user=os.environ.get("MYSQLUSER"),
+        password=os.environ.get("MYSQLPASSWORD"),
+        database=os.environ.get("MYSQLDATABASE")
     )
 
 
